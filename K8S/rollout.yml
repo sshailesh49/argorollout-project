@@ -1,45 +1,64 @@
-apiVersion: argoproj.io/v1alpha1   # Argo Rollouts का API Version
-kind: Rollout                      # Resource का प्रकार (यहाँ Rollout)
+apiVersion: argoproj.io/v1alpha1   # Argo Rollouts API version
+kind: Rollout                      # Resource type: Rollout
 metadata:
-  name: example-rollout            # Rollout का नाम
+  name: example-rollout            # Rollout name (must be unique)
+  namespace: default               # Namespace where rollout will be deployed
 
 spec:
-  replicas: 10                     # एक समय में कितने Pods चलेंगे (desired replicas)
+  replicas: 10                     # Total desired pods (stable + canary)
+  revisionHistoryLimit: 3          # Keep last 3 revisions for rollback
+  minReadySeconds: 30              # Pod must be ready for 30s before next step
 
-  selector:                        # Pod selection criteria (Deployment जैसा ही)
-    matchLabels:                   # कौन से Pods इस rollout का हिस्सा हैं
-      app: nginx                   # app=nginx label वाले pods चुने जाएंगे
+  selector:                        # Pod selection criteria
+    matchLabels:
+      app: nginx                   # Only pods with app=nginx label
 
-  template:                        # Pod template (Deployment जैसा)
+  template:                        # Pod template (like Deployment)
     metadata:
       labels:
-        app: nginx                 # Pod में label app=nginx लगेगा
+        app: nginx                 # Pod will get this label
     spec:
-      containers:                  # Pod के अंदर containers list
-        - name: nginx              # Container का नाम
+      containers:
+        - name: nginx              # Container name
           image: nginx:1.15.4      # Container image
           ports:
-            - containerPort: 80    # Container का port (service communication के लिए)
+            - containerPort: 80    # App listens inside pod on port 80
 
-  minReadySeconds: 30              # Pod ready माने जाने से पहले कम से कम 30 sec तक चलना चाहिए
-  revisionHistoryLimit: 3          # कितनी पुरानी revisions रखनी हैं
+  strategy:
+    canary:                        # Use Canary deployment strategy
 
-  strategy:                        # Rollout strategy define करने का section
-    canary:                        # यहाँ Canary deployment strategy यूज़ हो रही है
+      canaryService: hotstar-canary    # Service for Canary pods
+      stableService: hotstar-stable    # Service for Stable pods
 
-      canaryService: hotstar-canary    # Canary version के pods के लिए Service (इससे 10%, 20% traffic जाएगा)
-      stableService: hotstar-stable    # Stable (पुराना) version pods के लिए Service
+      trafficRouting:                  # Traffic split rules
+        nginx:                         # Using NGINX ingress controller
+          stableIngress: hotstar-ingress  # Stable ingress name
 
-      trafficRouting:                  # Traffic splitting कैसे होगा define करता है
-        nginx:                         # यहाँ NGINX ingress यूज़ हो रहा है traffic routing के लिए
-          stableIngress: hotstar-ingress  # Ingress का नाम, जो stable service को point करता है
+      maxSurge: '25%'              # Allow up to 25% extra pods during update
+      maxUnavailable: 0            # Ensure no pods are unavailable during rollout
 
-      maxSurge: '25%'              # Update के समय desired replicas से 25% extra pod create हो सकते हैं
-      maxUnavailable: 0            # Update के दौरान कोई pod unavailable नहीं होना चाहिए
+      # -------------------------------
+      # Newly added advanced settings
+      # -------------------------------
+      dynamicStableScale: true          # Scale down stable pods dynamically as canary scales up
+      abortScaleDownDelaySeconds: 600   # If rollout is aborted, wait 600s before scaling down canary pods
 
       steps:                       # Canary rollout steps
-        - setWeight: 10            # Traffic का 10% नए version (nginx:1.15.4) पर जाएगा
+        - setWeight: 10            # Send 10% traffic to Canary
         - pause:
-            duration: 30s          # Auto pause 30 seconds (Auto resume होगा 30 sec बाद)
-        - setWeight: 20            # अब traffic का 20% नए version पर जाएगा
-        - pause: {}                # Indefinite pause (manual approval चाहिए)
+            duration: 30s          # Auto-pause for 30 seconds (then continue)
+        - setWeight: 20            # Send 20% traffic to Canary
+        - pause: {}                # Indefinite pause (manual approval required)
+
+        # -------------------------------
+        # Additional CanaryScale examples
+        # -------------------------------
+
+        - setCanaryScale:
+            replicas: 3            # Explicitly run 3 canary pods
+
+        - setCanaryScale:
+            weight: 25             # Canary replicas = 25% of total (≈2-3 pods)
+
+        - setCanaryScale:
+            matchTrafficWeight: true  # Canary replicas scale in proportion to traffic %
