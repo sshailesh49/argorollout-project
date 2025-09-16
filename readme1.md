@@ -343,5 +343,70 @@ With INgress
     az aks delete --resource-group myResourceGroup --name myAKSCluster --yes
 
 
+# rollout file :
+        apiVersion: argoproj.io/v1alpha1   # Argo Rollouts API version
+        kind: Rollout                      # Resource type: Rollout
+        metadata:
+          name: example-rollout            # Rollout name (must be unique)
+          namespace: default               # Namespace where rollout will be deployed
+        
+        spec:
+          replicas: 10                     # Total desired pods (stable + canary)
+          revisionHistoryLimit: 3          # Keep last 3 revisions for rollback
+          minReadySeconds: 30              # Pod must be ready for 30s before next step
+        
+          selector:                        # Pod selection criteria
+            matchLabels:
+              app: nginx                   # Only pods with app=nginx label
+        
+          template:                        # Pod template (like Deployment)
+            metadata:
+              labels:
+                app: nginx                 # Pod will get this label
+            spec:
+              containers:
+                - name: nginx              # Container name
+                  image: nginx:1.15.4      # Container image
+                  ports:
+                    - containerPort: 80    # App listens inside pod on port 80
+        
+          strategy:
+            canary:                        # Use Canary deployment strategy
+        
+              canaryService: hotstar-canary    # Service for Canary pods
+              stableService: hotstar-stable    # Service for Stable pods
+        
+              trafficRouting:                  # Traffic split rules
+                nginx:                         # Using NGINX ingress controller
+                  stableIngress: hotstar-ingress  # Stable ingress name
+        
+              maxSurge: '25%'              # Allow up to 25% extra pods during update
+              maxUnavailable: 0            # Ensure no pods are unavailable during rollout
+        
+              steps:                       # Canary rollout steps
+                - setWeight: 10            # Send 10% traffic to Canary
+                - pause:
+                    duration: 30s          # Auto-pause for 30 seconds (then continue)
+                - setWeight: 20            # Send 20% traffic to Canary
+                - pause: {}                # Indefinite pause (manual approval required)
+        
+                # -------------------------------
+                # Additional CanaryScale examples
+                # -------------------------------
+        
+                # Explicitly scale Canary pods to 3 (fixed number)
+                - setCanaryScale:
+                    replicas: 3
+        
+                # Scale Canary pods to 25% of total spec.replicas (10 * 25% = 2 or 3 pods)
+                - setCanaryScale:
+                    weight: 25
+        
+                # Return to default behavior: Canary replicas = traffic weight %
+                - setCanaryScale:
+                    matchTrafficWeight: true
+
+
+
 
  
