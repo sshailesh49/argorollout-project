@@ -7,21 +7,21 @@
 ### Create Resource Group
 
 
-   az group create --name myResourceGroup --location eastus
+     az group create --name myResourceGroup --location eastus
 
 
 
 ### your subscription has registered the resource provider
-  az provider register --namespace Microsoft.OperationalInsights
+     az provider register --namespace Microsoft.OperationalInsights
   
   az provider show --namespace Microsoft.OperationalInsights --query "registrationState"
 
  
 ### If you’re also going to use Container Insights and Log Analytics, also register these (just once per subscription):
 
-  az provider register --namespace Microsoft.Monitoring
+     az provider register --namespace Microsoft.Monitoring
   
-  az provider register --namespace Microsoft.ContainerService
+    az provider register --namespace Microsoft.ContainerService
 
 ###  Before using AKS, register all the commonly required providers in one go:
 
@@ -35,12 +35,12 @@
 
 ### Create AKS Cluster
 
-   az aks create --resource-group myResourceGroup --name myAKSCluster --node-count 2 --node-vm-size Standard_a2_v2 --generate-ssh-keys
+     az aks create --resource-group myResourceGroup --name myAKSCluster --node-count 2 --node-vm-size Standard_a2_v2 --generate-ssh-keys
 
    or 
 ### This creates a **2-node AKS cluster** with monitoring enabled.
 
-   az aks create --resource-group myResourceGroup --name myAKSCluster --node-count 2 --node-vm-size Standard_DS2_v2 --enable-addons monitoring --generate-ssh-keys
+     az aks create --resource-group myResourceGroup --name myAKSCluster --node-count 2 --node-vm-size Standard_DS2_v2 --enable-addons monitoring --generate-ssh-keys
 
 
 
@@ -52,19 +52,19 @@
 ### Get Credentials for `kubectl`
 
 
-   az aks get-credentials --resource-group myResourceGroup --name myAKSCluster
+     az aks get-credentials --resource-group myResourceGroup --name myAKSCluster
 
 
 
 ### Verify Cluster
 
-  kubectl get nodes
+    kubectl get nodes
 
-  argocd cluster list
+    argocd cluster list
 
 ## argocd PASSWORD 
 
-   kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | % { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) }
+    kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | % { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) }
 
 ## ARGOCD LOGIN
 
@@ -80,21 +80,19 @@
     
 ### access via Browser 
 
-   kubectl patch svc argocd-server -n argocd --type=merge -p '{\"spec\":{\"type\":\"LoadBalancer\"}}'
+    kubectl patch svc argocd-server -n argocd --type=merge -p '{\"spec\":{\"type\":\"LoadBalancer\"}}'
 
-   kubectl get svc
+    kubectl get svc
 
 
    
 
-✅ DELETE CLUSTER 
 
 
 
 
-### you want to unregister a resource provider (namespace) in Azure.
 
-az provider unregister --namespace Microsoft.ContainerService
+
 
 
 
@@ -303,47 +301,46 @@ kubectl argo rollouts version
 With INgress 
 ######Install Helm with winget:
 
- winget install Helm.Helm
+    winget install Helm.Helm
  
 ##  add repo 
 
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm repo update
+    helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+    helm repo update
 
 
 ## INSTALL  nginx ingress controller 
 
-helm install ingress-nginx ingress-nginx/ingress-nginx `
-  --namespace ingress-nginx --create-namespace `
-  --set controller.replicaCount=2 `
-  --set controller.nodeSelector."kubernetes\.io/os"=linux `
-  --set defaultBackend.nodeSelector."kubernetes\.io/os"=linux `
-  --set controller.service.type=LoadBalancer
+    helm install ingress-nginx ingress-nginx/ingress-nginx `
+      --namespace ingress-nginx --create-namespace `
+      --set controller.replicaCount=2 `
+      --set controller.nodeSelector."kubernetes\.io/os"=linux `
+      --set defaultBackend.nodeSelector."kubernetes\.io/os"=linux `
+      --set controller.service.type=LoadBalancer
+      
   
   
-  
- kubectl get svc -n ingress-nginx
+    kubectl get svc -n ingress-nginx
 
 
-### Canary Rollout with Ingress
 
-  rollout.yaml
-  
-  '''
-  
-  '''
 
 ### delete Cluster 
 
-az aks delete --resource-group myResourceGroup --name myAKSCluster --yes 
+     
+    
+    
+    az provider unregister --namespace Microsoft.ContainerService
+    az provider unregister --namespace Microsoft.OperationalInsights
+    az provider unregister --namespace Microsoft.Monitor
+    az provider unregister --namespace Microsoft.Network
+    az provider unregister --namespace Microsoft.Compute 
 
+### you want to unregister a resource provider (namespace) in Azure.
 
-az provider unregister --namespace Microsoft.ContainerService
-az provider unregister --namespace Microsoft.OperationalInsights
-az provider unregister --namespace Microsoft.Monitor
-az provider unregister --namespace Microsoft.Network
-az provider unregister --namespace Microsoft.Compute 
+    az provider unregister --namespace Microsoft.ContainerService
 
+    az aks delete --resource-group myResourceGroup --name myAKSCluster --yes
 
 
 
