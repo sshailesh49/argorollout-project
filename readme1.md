@@ -382,7 +382,14 @@ With INgress
         
               maxSurge: '25%'              # Allow up to 25% extra pods during update
               maxUnavailable: 0            # Ensure no pods are unavailable during rollout
-        
+              # ------------------------------------
+            
+              #dynamicStableScale: true          # Scale down stable pods dynamically as canary scales up 
+                                                # Resource optimization (Stable + Canary pods मिलाकर fix replica count)
+              #abortScaleDownDelaySeconds: 600   # If rollout is aborted, wait 600s before scaling down canary pods
+                                                # सुरक्षित rollback + debugging का time
+              
+              #----------------------------------------
               steps:                       # Canary rollout steps
                 - setWeight: 10            # Send 10% traffic to Canary
                 - pause:
