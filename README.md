@@ -125,7 +125,22 @@ Then, update Argo CD's `argocd-server` and `argocd-repo-server` deployments to u
 kubectl argo rollouts dashboard
 ```
 
-This will open a local dashboard UI for Argo Rollouts via port-forward.
+     This will open a local dashboard UI for Argo Rollouts via port-forward.
 
 ---
 
+## Pause duration can be specified with an optional time unit suffix. Valid time units are "s", "m", "h". Defaults to "s" if not specified.
+
+    spec:
+      strategy:
+        canary:
+          steps:
+            - pause: { duration: 10 } # 10 seconds
+            - pause: { duration: 10s } # 10 seconds
+            - pause: { duration: 10m } # 10 minutes
+            - pause: { duration: 10h } # 10 hours
+            - pause: {} # pause indefinitely
+    If no duration is specified for a pause step, the rollout will be paused indefinitely. To unpause, use the argo kubectl plugin promote command.
+
+# promote to the next step
+    kubectl argo rollouts promote <rollout>
