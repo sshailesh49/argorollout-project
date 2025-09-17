@@ -49,11 +49,37 @@ spec:
         - setCanaryScale:
             replicas: 3          #  Fix 3 canary pods (20% traffic, pods fix 3 number)
         - pause: { duration: 30s }
+        # -------------------------------
+        # First step analysis step
+        # -------------------------------
+        - analysis:
+            templates:
+              - templateName: success-rate-check
+            args:
+              - name: service-name
+                value: hotstar-canary
         # Step 2: Increase to 50% traffic
         - setWeight: 50
         - setCanaryScale:
             weight: 25           #  Canary pods = 25% of total (≈2-3 pods)
         - pause: { duration: 30s }
+        - pause: {}                # Indefinite pause (manual approval required)  use prompt to next 
+        # -------------------------------
+        # Second Step analysis step
+        # -------------------------------
+        - analysis:
+            templates:
+              - templateName: success-rate-check
+            args:
+              - name: service-name
+                value: hotstar-canary
+
+        # -------------------------------
+        # Second step analysis step
+        # -------------------------------
+        - analysis:
+            templates:
+              - templateName: latency-check
         # Step 3: Increase to 90% traffic
         - setWeight: 90
         - setCanaryScale:
