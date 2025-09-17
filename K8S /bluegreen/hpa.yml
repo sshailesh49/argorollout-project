@@ -16,3 +16,4 @@ spec:
         target:
           type: Utilization     # Metric type, here average CPU utilization
           averageUtilization: 70 # Target value, HPA will scale when average CPU usage hits 70%
+  serviceAccountName: hpa-sa
