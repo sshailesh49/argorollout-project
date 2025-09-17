@@ -1,0 +1,68 @@
+apiVersion: argoproj.io/v1alpha1   # Argo Rollouts API version
+kind: Rollout                      # Resource type: Rollout
+metadata:
+  name: bluegreen-rollout          # Unique rollout name
+  namespace: default               # Namespace where rollout is deployed
+
+spec:
+  replicas: 6                      # Total desired pods
+  revisionHistoryLimit: 3          # Keep last 3 revisions for rollback
+  minReadySeconds: 20              # Pods must be ready for 20s before progressing
+
+  selector:                        # Label selector to identify pods
+    matchLabels:
+      app: myapp                   # Only pods with app=myapp label
+
+  template:                        # Pod template (like Deployment spec)
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+        - name: myapp
+          image: nginx:1.25.1
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+  strategy:
+    blueGreen:                     # Blue-Green deployment strategy
+      activeService: myapp-active      # Service for stable/production pods
+      previewService: myapp-preview    # Service for preview pods (test before switch)
+
+  
+      autoPromotionEnabled: false       # true → auto switch to preview after checks, false → manual promotion
+      autoPromotionSeconds: 60          # If autoPromotionEnabled=true, wait 60s before promoting
+
+      previewReplicaCount: 3            # Run 3 replicas in preview (instead of full count)
+
+      scaleDownDelaySeconds: 30         # Keep old version pods alive for 30s after promotion
+      scaleDownDelayRevisionLimit: 2    # Keep at most 2 old ReplicaSets around before garbage collection
+
+      prePromotionAnalysis:             # Run analysis before switching traffic
+        templates:
+          - templateName: success-rate-check
+        args:
+          - name: service-name
+            value: myapp-preview
+
+      postPromotionAnalysis:            # Run analysis after promotion
+        templates:
+          - templateName: latency-check
+
+      antiAffinity:                     # Pod anti-affinity rules
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - myapp
+              topologyKey: "kubernetes.io/hostname"   # Avoid scheduling preview & active pods on same node
