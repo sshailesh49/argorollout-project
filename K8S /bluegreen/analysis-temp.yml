@@ -1,0 +1,59 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: success-rate-check
+spec:
+  args:
+    - name: service-name
+  metrics:
+    - name: success-rate
+      interval: 30s
+      successCondition: result[0] >= 0.95
+      provider:
+        prometheus:
+          address: http://prometheus-server.prometheus.svc.cluster.local:9090
+          query: |
+            sum(rate(http_requests_total{service="{{args.service-name}}",status=~"2.."}[1m]))
+            /
+            sum(rate(http_requests_total{service="{{args.service-name}}"}[1m]))
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: latency-check
+spec:
+  metrics:
+    - name: latency
+      interval: 30s
+      successCondition: result[0] < 0.5
+      provider:
+        prometheus:
+          address: http://prometheus-server.prometheus.svc.cluster.local:9090
+          query: |
+            histogram_quantile(0.95,
+              sum(rate(http_request_duration_seconds_bucket{service="myapp-preview"}[1m])) by (le)
+            )
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: myapp-rollout
+spec:
+  replicas: 4
+  strategy:
+    canary:
+      steps:
+        - setWeight: 50
+        - pause: {duration: 60}
+      analysis:
+        templates:
+          - templateName: success-rate-check
+            args:
+              - name: service-name
+                value: myapp-preview
+
+      postPromotionAnalysis:
+        templates:
+          - templateName: latency-check
