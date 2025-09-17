@@ -18,6 +18,17 @@ spec:
       labels:
         app: nginx                 # Pod will get this label
     spec:
+      affinity:                       # Pod scheduling rules (defines where and how pods will be scheduled)
+      podAntiAffinity:              # Means → do not place similar pods on the same node
+      requiredDuringSchedulingIgnoredDuringExecution:   # This is a HARD rule (must be followed)
+      - labelSelector:          # Defines which pods to compare against
+          matchExpressions:     # Way to define label-based conditions
+            - key: app          # Pod label key → "app"
+              operator: In      # Operator → means value must match one in the list
+              values:           # Acceptable values list
+                - demo-app      # Rule applies only to pods with label app=demo-app
+        topologyKey: "kubernetes.io/hostname"   # Node-level factor → do not schedule pods with the same label on the same hostname
+
       containers:
         - name: nginx              # Container name
           image: nginx:1.15.4      # Container image
