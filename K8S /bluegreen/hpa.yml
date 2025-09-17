@@ -6,9 +6,9 @@ spec:
   scaleTargetRef:               # Specifies which resource HPA will scale
     apiVersion: argoproj.io/v1alpha1  # API version of the target resource, here it's Argo Rollout
     kind: Rollout               # Target resource type, Argo Rollout
-    name: bluegreen-rollout-example   # Name of the target Rollout
+    name: bluegreen-rollout   # Name of the target Rollout
   minReplicas: 2                # Minimum number of pods to maintain
-  maxReplicas: 5                # Maximum number of pods allowed
+  maxReplicas: 20               # Maximum number of pods allowed
   metrics:                      # Defines metrics to trigger scaling
     - type: Resource            # Type of metric, here it’s a resource metric (CPU/Memory)
       resource:
