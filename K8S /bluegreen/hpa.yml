@@ -1,0 +1,18 @@
+apiVersion: autoscaling/v2   # API version for Kubernetes HPA, v2 supports advanced metrics
+kind: HorizontalPodAutoscaler # Resource type, used for pod autoscaling
+metadata:
+  name: hpa-bluegreen-example  # Name of the HPA, must be unique
+spec:
+  scaleTargetRef:               # Specifies which resource HPA will scale
+    apiVersion: argoproj.io/v1alpha1  # API version of the target resource, here it's Argo Rollout
+    kind: Rollout               # Target resource type, Argo Rollout
+    name: bluegreen-rollout-example   # Name of the target Rollout
+  minReplicas: 2                # Minimum number of pods to maintain
+  maxReplicas: 5                # Maximum number of pods allowed
+  metrics:                      # Defines metrics to trigger scaling
+    - type: Resource            # Type of metric, here it’s a resource metric (CPU/Memory)
+      resource:
+        name: cpu               # Resource metric name, CPU utilization in this case
+        target:
+          type: Utilization     # Metric type, here average CPU utilization
+          averageUtilization: 70 # Target value, HPA will scale when average CPU usage hits 70%
