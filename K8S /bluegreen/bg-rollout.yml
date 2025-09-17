@@ -23,6 +23,13 @@ spec:
           image: nginx:1.25.1
           ports:
             - containerPort: 80
+          resources:
+            requests:           # Minimum resources pod will get
+              cpu: 100m
+              memory: 128Mi
+            limits:             # Maximum resources pod can use
+              cpu: 500m
+              memory: 512Mi
           readinessProbe:
             httpGet:
               path: /
