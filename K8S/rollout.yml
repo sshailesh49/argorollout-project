@@ -43,22 +43,24 @@ spec:
       dynamicStableScale: true          # Scale down stable pods dynamically as canary scales up
       abortScaleDownDelaySeconds: 600   # If rollout is aborted, wait 600s before scaling down canary pods
 
-      steps:                       # Canary rollout steps
-        - setWeight: 10            # Send 10% traffic to Canary
-        - pause:
-            duration: 30s          # Auto-pause for 30 seconds (then continue)
-        - setWeight: 20            # Send 20% traffic to Canary
-        - pause: {}                # Indefinite pause (manual approval required)
-
-        # -------------------------------
-        # Additional CanaryScale examples
-        # -------------------------------
-
+      steps: 
+         # Step 1: Send 20% traffic to canary
+        - setWeight: 20
         - setCanaryScale:
-            replicas: 3            # Explicitly run 3 canary pods
-
+            replicas: 3          #  Fix 3 canary pods (20% traffic, pods fix 3 number)
+        - pause: { duration: 30s }
+        # Step 2: Increase to 50% traffic
+        - setWeight: 50
         - setCanaryScale:
-            weight: 25             # Canary replicas = 25% of total (≈2-3 pods)
-
+            weight: 25           #  Canary pods = 25% of total (≈2-3 pods)
+        - pause: { duration: 30s }
+        # Step 3: Increase to 90% traffic
+        - setWeight: 90
         - setCanaryScale:
-            matchTrafficWeight: true  # Canary replicas scale in proportion to traffic %
+            matchTrafficWeight: true   #  Pods scale accorfing to  traffic %  (90% traffic → 9 pods)
+         # Step 4: Final step
+        - setWeight: 100
+        - setCanaryScale:
+            matchTrafficWeight: true   #  Pods scale accorfing to  traffic %  (100% traffic → 10 pods)
+
+
